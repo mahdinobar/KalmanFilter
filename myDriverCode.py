@@ -7,7 +7,7 @@ mnobar@ethz.ch
 """
 ###############################################################################
 # RUN THIS PART FIRST, FROM HERE 
-# UNTIL - SCROLL DOWN
+# UNTIL - SCROLL DOWN 
 ###############################################################################
 
 import numpy as np
