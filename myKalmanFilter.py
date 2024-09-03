@@ -32,7 +32,7 @@ class KalmanFilter(object):
         # note: list starts from x0^{+}=x0 - where x0 is an initial guess of the estimate
         # self.estimates_aposteriori=[]
         # self.estimates_aposteriori.append(x0)
-        self.estimates_aposteriori=x0.reshape(3,1)
+        self.estimates_aposteriori=self.x0.reshape(3,1)
 
 
     # this list is used to store the a apriori estimates xk^{-} starting from x1^{-}
