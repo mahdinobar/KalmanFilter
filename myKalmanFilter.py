@@ -55,12 +55,15 @@ class KalmanFilter(object):
         # this list is used to store prediction errors error_k=y_k-C*xk^{-}
         self.errors = []
 
+        self.x_prediction_ahead = []
+
     # this function propagates x_{k-1}^{+} through the model to compute x_{k}^{-}
     # this function also propagates P_{k-1}^{+} through the covariance model to compute P_{k}^{-}
     # at the end this function increments the time index currentTimeStep for +1
     def propagateDynamics(self, inputValue):
 
         xk_minus = self.A * self.estimates_aposteriori[:, self.currentTimeStep].reshape(3, 1) + self.B * inputValue
+
         Pk_minus = self.A * np.asmatrix(
             self.estimationErrorCovarianceMatricesAposteriori[self.currentTimeStep, :, :]) * (self.A.T) + self.Q
 
@@ -82,7 +85,7 @@ class KalmanFilter(object):
         Kk = np.asmatrix(self.estimationErrorCovarianceMatricesApriori[self.currentTimeStep - 1, :, :]) * (
             self.C.T) * np.linalg.inv(self.R + self.C * np.asmatrix(
             self.estimationErrorCovarianceMatricesApriori[self.currentTimeStep - 1, :, :]) * (self.C.T))
-        # update prediction error when measurement data received
+        # update prediction error when measurement data received (Innovation)
         error_k = currentMeasurement.reshape(3, 1) - self.C * self.estimates_apriori[:,
                                                               self.currentTimeStep - 1].reshape(3, 1)
         # a posteriori estimate
@@ -95,9 +98,6 @@ class KalmanFilter(object):
         # else:
         #     # a posteriori estimate
         #     xk_plus = self.estimates_apriori[:, self.currentTimeStep - 1].reshape(3, 1)
-
-
-
 
         # update the lists that store the vectors and matrices
         # self.gainMatrices.append(Kk)
@@ -113,3 +113,12 @@ class KalmanFilter(object):
         # self.errors.append(error_k)
         # self.estimates_aposteriori.append(xk_plus)
         # self.estimationErrorCovarianceMatricesAposteriori.append(Pk_plus)
+
+    def prediction_aheads(self, u, dt):
+        if self.x_prediction_ahead==[]:
+            self.x_prediction_ahead = self.estimates_aposteriori
+        else:
+            self.x_prediction_ahead =np.hstack((self.x_prediction_ahead,self.estimates_aposteriori[:, -1].reshape(3, 1)))
+        for i in range(int(dt)-1):
+            x = self.A * self.x_prediction_ahead[:, -1].reshape(3, 1) + self.B * u
+            self.x_prediction_ahead = np.hstack((self.x_prediction_ahead, x))

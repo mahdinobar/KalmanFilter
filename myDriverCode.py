@@ -11,13 +11,13 @@ from myKalmanFilter import KalmanFilter
 import cv2
 def main(log_dir):
     # initial values for the simulation
-    # initialPosition = np.array([514.5, -269.8, 67.6])  # [mm]
-    initialPosition = np.array([9.5*50+30+3+4, -5.5*50+5,90+3-25])  # [mm]
-    # initialVelocity = np.array([0, 3 * 10 / 1000, 0])  # [mm/1ms]
-    initialVelocity = np.array([0, 0.0345, 0])  # [mm/1ms]
+    # x_hat_init = np.array([514.5, -269.8, 67.6])  # [mm]
+    x_hat_init = np.array([9.5*50+30+3+4, -5.5*50+5,90+3-25])  # [mm] manually measured and fixed rigidly
+    # v_hat_init = np.array([0, 3 * 10 / 1000, 0])  # [mm/1ms]
+    v_hat_init = np.array([0, 0.0345, 0])  # [mm/1ms]
 
     # number of discretization time steps
-    N = 9100  # dt=1[ms]
+    N = 9066  # dt=1[ms]
 
     # define the system matrices - Newtonian system
     # system matrices and covariances
@@ -28,14 +28,15 @@ def main(log_dir):
     # measurement noise covariance
     # 1.741=np.std(P_t_hat[1,12:80]-(0.035*(tVec[12:80]-tVec[12])+P_t_hat[1,12]))
     # 0.174=np.std(P_t_hat[2,12:80])
-    R = np.array([[0.288 ** 2, 0, 0], [0, 1.741 ** 2, 0], [0, 0, 0.174 ** 2]])
+    # R = np.array([[0.288 ** 2, 0, 0], [0, 1.741 ** 2, 0], [0, 0, 0.174 ** 2]])
+    R = np.array([[2** 2, 0, 0], [0, 5 ** 2, 0], [0, 0, 2 ** 2]])
     # process uncertainty covariance
-    Q = np.array([[0.1 ** 2, 0, 0], [0, 0.1 ** 2, 0], [0, 0, 0.1 ** 2]]) # np.matrix(np.zeros((3, 3)))
+    Q = np.array([[1 ** 2, 0, 0], [0, 1 ** 2, 0], [0, 0, 1 ** 2]]) # np.matrix(np.zeros((3, 3)))
 
     # guess of the initial estimate
-    x0 = initialPosition#np.array([ 511.59460576, -272.16726961, 68.63392779])
+    x0 = x_hat_init #np.array([ 511.59460576, -272.16726961, 68.63392779])
     # initial covariance matrix
-    P0 = 50 * np.matrix(np.eye(3))
+    P0 = np.asmatrix(np.diag([1,4,1]))
 
     # time vector for simulation
     tVec = np.linspace(0, (N - 1), N)
@@ -48,8 +49,8 @@ def main(log_dir):
     # simulate the system behavior (discretize system)
     for k in np.arange(np.size(tVec)):
         for i in range(0, 3):
-            X_true[i, k] = initialPosition[i] + initialVelocity[i] * tVec[k]
-            velocity[i, k] = initialVelocity[i]
+            X_true[i, k] = x_hat_init[i] + v_hat_init[i] * tVec[k]
+            velocity[i, k] = v_hat_init[i]
 
     # MEASURED(observed) STATES
     # add the measurement noise
@@ -69,18 +70,17 @@ def main(log_dir):
 
     # verify the X_true vector by plotting the results
 
-    plotStep = N // 1
     fig, ax = plt.subplots(3, 1, figsize=(12, 8))
-    ax[0].plot(tVec[0:plotStep], X_true[0, 0:plotStep], '-*g', linewidth=1, label='ideal')
-    ax[0].plot(tVec_measured[0:plotStep], X_measured[0, 0:plotStep], '-or', linewidth=1, label='measured')
+    ax[0].plot(tVec[0:N], X_true[0, 0:N], '-*g', linewidth=1, label='true')
+    ax[0].plot(tVec_measured[0:N], X_measured[0, 0:N], '-or', linewidth=1, label='measured')
     ax[0].set_ylabel("x [mm]", fontsize=14)
     ax[0].legend()
-    ax[1].plot(tVec[0:plotStep], X_true[1, 0:plotStep], '-*g', linewidth=1, label='ideal')
-    ax[1].plot(tVec_measured[0:plotStep], X_measured[1, 0:plotStep], '-or', linewidth=1, label='measured')
+    ax[1].plot(tVec[0:N], X_true[1, 0:N], '-*g', linewidth=1, label='true')
+    ax[1].plot(tVec_measured[0:N], X_measured[1, 0:N], '-or', linewidth=1, label='measured')
     ax[1].set_ylabel("y [mm]", fontsize=14)
     ax[1].legend()
-    ax[2].plot(tVec[0:plotStep], X_true[2, 0:plotStep], '-*g', linewidth=1, label='ideal')
-    ax[2].plot(tVec_measured[0:plotStep], X_measured[2, 0:plotStep], '-or', linewidth=1, label='measured')
+    ax[2].plot(tVec[0:N], X_true[2, 0:N], '-*g', linewidth=1, label='true')
+    ax[2].plot(tVec_measured[0:N], X_measured[2, 0:N], '-or', linewidth=1, label='measured')
     ax[2].set_xlabel("$t_{k}$ [ms]", fontsize=14)
     ax[2].set_ylabel("z [mm]", fontsize=14)
     ax[2].legend()
@@ -97,26 +97,18 @@ def main(log_dir):
 
     # create a Kalman filter object
     KalmanFilterObject = KalmanFilter(x0, P0, A, B, C, Q, R)
-    u = np.array([initialVelocity[1]])
-    # k_measured=1
+    u = np.array([v_hat_init[1]])
     tVec_measured_rounded=np.round(tVec_measured)
     # simulate online prediction
-    for k_measured in np.arange(np.size(tVec_measured_rounded)):
+    for k_measured in range(1,np.size(tVec_measured_rounded)):#np.arange(np.size(tVec_measured_rounded)):
         print(k_measured)
-        if k_measured==0:
-            dt=1
-            KalmanFilterObject.B= np.array([[0],[dt],[0]])
-        elif k_measured>0:
-            dt=tVec_measured_rounded[k_measured]-tVec_measured_rounded[k_measured-1]
-            KalmanFilterObject.B= np.array([[0],[dt],[0]])
+        # TODO correct for the online application where dt is varying and be know the moment we receive the measurement
+        dt=tVec_measured_rounded[k_measured]-tVec_measured_rounded[k_measured-1]
+        KalmanFilterObject.B= np.array([[0],[dt],[0]])
         KalmanFilterObject.propagateDynamics(u)
-        # if tVec[k]==tVec_measured_rounded[k_measured]:
+        KalmanFilterObject.B= np.array([[0],[1],[0]])
+        KalmanFilterObject.prediction_aheads(u, dt)
         KalmanFilterObject.computeAposterioriEstimate(X_measured[:, k_measured])
-        # else:
-        #     KalmanFilterObject.computeAposterioriEstimate([],False)
-
-
-    KalmanFilterObject.estimates_aposteriori
 
     # extract the state estimates in order to plot the results
     x_hat = []
@@ -128,7 +120,7 @@ def main(log_dir):
     # z_hat_cpp = []
     # # Load C++ estimates
     # cppEstimates = np.loadtxt("myEstimatesAposteriori.csv", delimiter=",")
-    for j in np.arange(np.size(tVec_measured_rounded)):
+    for j in range(0,np.size(tVec_measured_rounded)):#np.arange(np.size(tVec_measured_rounded)):
         # python estimates
         x_hat.append(KalmanFilterObject.estimates_aposteriori[0, j])
         y_hat.append(KalmanFilterObject.estimates_aposteriori[1, j])
@@ -138,22 +130,24 @@ def main(log_dir):
         # y_hat_cpp.append(cppEstimates[1, j])
         # z_hat_cpp.append(cppEstimates[2, j])
 
-    plotStep = N // 1
     k0=0
     fig, ax = plt.subplots(3, 1, figsize=(12, 8))
-    ax[0].plot(tVec_measured_rounded[k0:plotStep], X_true[0,tVec_measured_rounded.astype("int")], '-*g', linewidth=1, label='true')
-    ax[0].plot(tVec_measured_rounded[k0:plotStep], X_measured[0, k0:plotStep], '-or', linewidth=1, label='measured')
-    ax[0].plot(tVec_measured_rounded[k0:plotStep], x_hat[k0:plotStep], '-ob', linewidth=1, label='estimated')
+    ax[0].plot(tVec, X_true[0,:], '-*g', linewidth=1, markersize=1, label='true')
+    ax[0].plot(tVec_measured_rounded[1:], X_measured[0,1:], '-or', linewidth=1, markersize=5, label='measured')
+    ax[0].plot(tVec_measured_rounded, x_hat, 'ob', linewidth=1, markersize=5, label='estimated')
+    ax[0].plot(tVec, np.asarray(KalmanFilterObject.x_prediction_ahead[0,k0:N]).squeeze(), '-Dk', linewidth=1, markersize=1, label='prediction ahead')
     ax[0].set_ylabel("x [mm]", fontsize=14)
     ax[0].legend()
-    ax[1].plot(tVec_measured_rounded[k0:plotStep], X_true[1,tVec_measured_rounded.astype("int")], '-*g', linewidth=1, label='true')
-    ax[1].plot(tVec_measured_rounded[k0:plotStep], X_measured[1, k0:plotStep], '-or', linewidth=1, label='measured')
-    ax[1].plot(tVec_measured_rounded[k0:plotStep], y_hat[k0:plotStep], '-ob', linewidth=1, label='estimated')
+    ax[1].plot(tVec, X_true[1,:], '-*g', linewidth=1, markersize=1, label='true')
+    ax[1].plot(tVec_measured_rounded[1:], X_measured[1, 1:], '-or', linewidth=1, markersize=5, label='measured')
+    ax[1].plot(tVec_measured_rounded, y_hat, '-ob', linewidth=1, markersize=5, label='estimated')
+    ax[1].plot(tVec, np.asarray(KalmanFilterObject.x_prediction_ahead[1,k0:N]).squeeze(), '-Dk', linewidth=1, markersize=1, label='prediction ahead')
     ax[1].set_ylabel("y [mm]", fontsize=14)
     ax[1].legend()
-    ax[2].plot(tVec_measured_rounded[k0:plotStep], X_true[2,tVec_measured_rounded.astype("int")], '-*g', linewidth=1, label='true')
-    ax[2].plot(tVec_measured_rounded[k0:plotStep], X_measured[2, k0:plotStep], '-or', linewidth=1, label='measured')
-    ax[2].plot(tVec_measured_rounded[k0:plotStep], z_hat[k0:plotStep], '-ob', linewidth=1, label='estimated')
+    ax[2].plot(tVec, X_true[2,:], '-*g', linewidth=1, markersize=1, label='true')
+    ax[2].plot(tVec_measured_rounded[1:], X_measured[2, 1:], '-or', linewidth=1, markersize=5, label='measured')
+    ax[2].plot(tVec_measured_rounded, z_hat, '-ob', linewidth=1, markersize=5, label='estimated')
+    ax[2].plot(tVec, np.asarray(KalmanFilterObject.x_prediction_ahead[2,k0:N]).squeeze(), '-Dk', linewidth=1, markersize=1, label='prediction ahead')
     ax[2].set_xlabel("$t_{k}$ [ms]", fontsize=14)
     ax[2].set_ylabel("z [mm]", fontsize=14)
     ax[2].legend()
