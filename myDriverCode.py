@@ -12,7 +12,7 @@ import cv2
 def main(log_dir):
     # initial values for the simulation
     # x_hat_init = np.array([514.5, -269.8, 67.6])  # [mm]
-    x_hat_init = np.array([9.5*50+30+5+4, -5.5*50+4,90+3-25+33])  # [mm] manually measured and fixed rigidly
+    x_hat_init = np.array([9.5*50+30+5+4, -5.5*50+5,90+3-25+33])  # [mm] manually measured and fixed rigidly
     # v_hat_init = np.array([0, 3 * 10 / 1000, 0])  # [mm/1ms]
     v_hat_init = np.array([0, 0.0341, 0])  # [mm/1ms]
 
