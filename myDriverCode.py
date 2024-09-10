@@ -12,9 +12,9 @@ import cv2
 def main(log_dir):
     # initial values for the simulation
     # x_hat_init = np.array([514.5, -269.8, 67.6])  # [mm]
-    x_hat_init = np.array([9.5*50+30+3+4, -5.5*50+5,90+3-25])  # [mm] manually measured and fixed rigidly
+    x_hat_init = np.array([9.5*50+30+5+4, -5.5*50+4,90+3-25+33])  # [mm] manually measured and fixed rigidly
     # v_hat_init = np.array([0, 3 * 10 / 1000, 0])  # [mm/1ms]
-    v_hat_init = np.array([0, 0.0345, 0])  # [mm/1ms]
+    v_hat_init = np.array([0, 0.0341, 0])  # [mm/1ms]
 
     # number of discretization time steps
     N = 9066  # dt=1[ms]
@@ -59,7 +59,7 @@ def main(log_dir):
     #     X_measured[i, :] = X_true[i, :] + np.random.normal(0, np.sqrt(R[i,i]), size=np.size(tVec))
     # TODO: ASSUMPTION: we assume index 12 corresponds to when the object starts to move(initial condition)
     tVec_measured=np.load(log_dir + "/tVec_s1.npy")[12:80]
-    P_t_hat=np.load(log_dir+"/P_t_hat_s1.npy")[:,12:80]
+    P_t_hat=np.load(log_dir+"/P_t_hat_s1.npy")[:,12:80]+np.array([[0],[0],[33],[0]])
     conf_Z=np.load(log_dir + "/conf_Z_s1.npy")[12:80]
 
     tVec_measured=((tVec_measured - tVec_measured[0]) * 1000) #[ms]
@@ -135,19 +135,19 @@ def main(log_dir):
     ax[0].plot(tVec, X_true[0,:], '-*g', linewidth=1, markersize=1, label='true')
     ax[0].plot(tVec_measured_rounded[1:], X_measured[0,1:], '-or', linewidth=1, markersize=5, label='measured')
     ax[0].plot(tVec_measured_rounded, x_hat, 'ob', linewidth=1, markersize=5, label='estimated')
-    ax[0].plot(tVec, np.asarray(KalmanFilterObject.x_prediction_ahead[0,k0:N]).squeeze(), '-Dk', linewidth=1, markersize=1, label='prediction ahead')
+    ax[0].plot(tVec, np.asarray(KalmanFilterObject.x_prediction_ahead[0,:]).squeeze(), '-Dk', linewidth=1, markersize=1, label='prediction ahead')
     ax[0].set_ylabel("x [mm]", fontsize=14)
     ax[0].legend()
     ax[1].plot(tVec, X_true[1,:], '-*g', linewidth=1, markersize=1, label='true')
     ax[1].plot(tVec_measured_rounded[1:], X_measured[1, 1:], '-or', linewidth=1, markersize=5, label='measured')
     ax[1].plot(tVec_measured_rounded, y_hat, '-ob', linewidth=1, markersize=5, label='estimated')
-    ax[1].plot(tVec, np.asarray(KalmanFilterObject.x_prediction_ahead[1,k0:N]).squeeze(), '-Dk', linewidth=1, markersize=1, label='prediction ahead')
+    ax[1].plot(tVec, np.asarray(KalmanFilterObject.x_prediction_ahead[1,:]).squeeze(), '-Dk', linewidth=1, markersize=1, label='prediction ahead')
     ax[1].set_ylabel("y [mm]", fontsize=14)
     ax[1].legend()
     ax[2].plot(tVec, X_true[2,:], '-*g', linewidth=1, markersize=1, label='true')
     ax[2].plot(tVec_measured_rounded[1:], X_measured[2, 1:], '-or', linewidth=1, markersize=5, label='measured')
     ax[2].plot(tVec_measured_rounded, z_hat, '-ob', linewidth=1, markersize=5, label='estimated')
-    ax[2].plot(tVec, np.asarray(KalmanFilterObject.x_prediction_ahead[2,k0:N]).squeeze(), '-Dk', linewidth=1, markersize=1, label='prediction ahead')
+    ax[2].plot(tVec, np.asarray(KalmanFilterObject.x_prediction_ahead[2,:]).squeeze(), '-Dk', linewidth=1, markersize=1, label='prediction ahead')
     ax[2].set_xlabel("$t_{k}$ [ms]", fontsize=14)
     ax[2].set_ylabel("z [mm]", fontsize=14)
     ax[2].legend()
@@ -170,7 +170,16 @@ def main(log_dir):
     # ax2.legend(fontsize=14)
     # fig2.savefig('estimationErrorsImplementation.png', dpi=600)
     # plt.show()
+    np.save(log_dir+"/r_star.npy",np.asarray(KalmanFilterObject.x_prediction_ahead))
+    np.savetxt(log_dir+'/r_star.csv', np.asarray(KalmanFilterObject.x_prediction_ahead), delimiter=',')
+    np.savetxt(log_dir+'/x_star.csv', np.asarray(KalmanFilterObject.x_prediction_ahead)[0,:], delimiter=',')
+    np.savetxt(log_dir+'/y_star.csv', np.asarray(KalmanFilterObject.x_prediction_ahead)[1,:], delimiter=',')
+    np.savetxt(log_dir+'/z_star.csv', np.asarray(KalmanFilterObject.x_prediction_ahead)[2,:], delimiter=',')
+    np.save(log_dir+"/t.npy",tVec)
+    np.savetxt(log_dir+'/t.csv', tVec, delimiter=',')
+
     print("end")
+
 
 def load_measurements(log_dir):
     tVec=np.load(log_dir + "/tVec_s1.npy")[1:]

@@ -164,7 +164,6 @@ MatrixXd KalmanFilter::openData(string fileToOpen)
 	// note that matrixEntries.data() is the pointer to the first memory location at which the entries of the vector matrixEntries are stored;
 	return Map<Matrix<double, Dynamic, Dynamic, RowMajor>> (matrixEntries.data(), 
 															matrixRowNumber, matrixEntries.size() / matrixRowNumber);
-
 }
 
 
