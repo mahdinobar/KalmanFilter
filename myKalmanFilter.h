@@ -31,7 +31,7 @@ class KalmanFilter{
         // it computes the Kalman filter gain matrix
         // it computes the a posteriori estimate 
         // it computes the a posteriori covariance matrix
-        void updateEstimate(MatrixXd measurement);
+        void updateEstimate(double measurement_x, double measurement_y, double measurement_z);
         
         // this member function predicts the estimate on the basis of the external input
         // it computes the a priori estimate
@@ -48,7 +48,9 @@ class KalmanFilter{
                       string covarianceAposterioriFile, string covarianceAprioriFile, 
                       string gainMatricesFile, string errorsFile) const;
 
-    private:
+    // MatrixXd is an Eigen typdef for Matrix<double, Dynamic, Dynamic> means matrix dimensions are not fixed and changing
+    MatrixXd B;
+private:
 
         // this variable is used to track the current time step k of the estimator 
         // after every measurement arrives, this variables is incremented for +1 
@@ -58,7 +60,7 @@ class KalmanFilter{
         unsigned int m,n,r; 
 
         // MatrixXd is an Eigen typdef for Matrix<double, Dynamic, Dynamic> means matrix dimensions are not fixed and changing
-	    MatrixXd A,B,C,Q,R,P0; // A,B,C,Q, R, and P0 matrices (Q and R are disturbance and measurement noise covariance matrices
+	    MatrixXd A,C,Q,R,P0; // A,B,C,Q, R, and P0 matrices (Q and R are disturbance and measurement noise covariance matrices
 	    MatrixXd x0;     // initial state
 	    
         // this matrix is used to store the a posteriori estimates xk^{+} starting from the initial estimate 
