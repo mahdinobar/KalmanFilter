@@ -23,11 +23,12 @@ KalmanFilter::KalmanFilter() {
 // "gainMatrices", and "errors" that are used to store appropriate quantities during the propagation
 // of the Kalman filter equations
 //
-// - the private variable "k" is set to zero. This variable is used to track the current iteration
+// - the private variable "k_measured" is set to zero. This variable is used to track the current iteration
 // of the Kalman filter.
 KalmanFilter::KalmanFilter(MatrixXd Ainput, MatrixXd Binput, MatrixXd Cinput,
                            MatrixXd Qinput, MatrixXd Rinput, MatrixXd P0input,
                            MatrixXd x0input, unsigned int maxSimulationSamples) {
+    k_measured = 0; //we initialize here
     k = 0; //we initialize here
     // assign the private variables
     A = Ainput;
@@ -47,6 +48,8 @@ KalmanFilter::KalmanFilter(MatrixXd Ainput, MatrixXd Binput, MatrixXd Cinput,
     estimatesAposteriori.setZero();
     estimatesAposteriori.col(0) = x0;
 
+    X_prediction_ahead.resize(n, 9066);
+
     // this matrix is used to store a priori estimates column wise
     estimatesApriori.resize(n, maxSimulationSamples);
     estimatesApriori.setZero();
@@ -55,6 +58,7 @@ KalmanFilter::KalmanFilter(MatrixXd Ainput, MatrixXd Binput, MatrixXd Cinput,
     covarianceAposteriori.resize(n, n * maxSimulationSamples);
     covarianceAposteriori.setZero();
     covarianceAposteriori(all, seq(0, n - 1)) = P0;
+
 
     // this matrix is used to store the a priori covariance matrices next to each other
     covarianceApriori.resize(n, n * maxSimulationSamples);
@@ -73,14 +77,20 @@ KalmanFilter::KalmanFilter(MatrixXd Ainput, MatrixXd Binput, MatrixXd Cinput,
 // it computes the a priori estimate
 // it computes the a priori covariance matrix
 void KalmanFilter::predictEstimate(MatrixXd u) {
-    // keep in mind that initially, k=0
-    estimatesApriori.col(k) = A * estimatesAposteriori.col(k) + B * u;
-    covarianceApriori(all, seq(k * n, (k + 1) * n - 1)) =
-            A * covarianceAposteriori(all, seq(k * n, (k + 1) * n - 1)) * (A.transpose()) + Q;
-    // increment the time step
-    k++;
-
+    // keep in mind that initially, k_measured=0
+    estimatesApriori.col(k_measured) = A * estimatesAposteriori.col(k_measured) + B * u;
+    covarianceApriori(all, seq(k_measured * n, (k_measured + 1) * n - 1)) =
+            A * covarianceAposteriori(all, seq(k_measured * n, (k_measured + 1) * n - 1)) * (A.transpose()) + Q;
 }
+
+void KalmanFilter::prediction_aheads(MatrixXd u, int dt) {
+    X_prediction_ahead.col(k) = estimatesAposteriori.col(k_measured);
+    for (int i = 1; i < dt; i++) {
+        X_prediction_ahead.col(k + i) = A * X_prediction_ahead.col(k - 1 + i) + B * u;
+    }
+    k+=dt;
+}
+
 
 // this member function updates the estimate on the basis of the measurement
 // it computes the Kalman filter gain matrix
@@ -88,41 +98,44 @@ void KalmanFilter::predictEstimate(MatrixXd u) {
 // it computes the a posteriori covariance matrix
 
 void KalmanFilter::updateEstimate(double measurement_x, double measurement_y, double measurement_z) {
-    // initially, the value of k will be 1, once this function is called
+    // increment the time step
+    k_measured++;
+    // initially, the value of k_measured will be 1, once this function is called
     // this is because predictEstimate() is called before this function
-    // and predict estimate increments the value of k
+    // and predict estimate increments the value of k_measured
 
     // this matrix is used to compute the Kalman gain
     MatrixXd Sk;
     Sk.resize(r, r);
-    Sk = R + C * covarianceApriori(all, seq((k - 1) * n, k * n - 1)) * (C.transpose());
+    Sk = R + C * covarianceApriori(all, seq((k_measured - 1) * n, k_measured * n - 1)) * (C.transpose());
     Sk = Sk.inverse();
     // gain matrices
-    gainMatrices(all, seq((k - 1) * r, k * r - 1)) =
-            covarianceApriori(all, seq((k - 1) * n, k * n - 1)) * (C.transpose()) * Sk;
+    gainMatrices(all, seq((k_measured - 1) * r, k_measured * r - 1)) =
+            covarianceApriori(all, seq((k_measured - 1) * n, k_measured * n - 1)) * (C.transpose()) * Sk;
     // compute the error - innovation
-//    cout << -C * estimatesApriori.col(k - 1) << endl;
-    Matrix<double, 3, 1> X;
-    X(0) = measurement_x;
-    X(1) = measurement_y;
-    X(2) = measurement_z;
-//    cout << X << endl;
-    errors.col(k - 1) = X - C * estimatesApriori.col(k - 1);
-    // compute the a posteriori estimate, remember that for k=0, the corresponding column is x0 - initial guess
-    estimatesAposteriori.col(k) =
-            estimatesApriori.col(k - 1) + gainMatrices(all, seq((k - 1) * r, k * r - 1)) * errors.col(k - 1);
+//    cout << -C * estimatesApriori.col(k_measured - 1) << endl;
+    Matrix<double, 3, 1> Y;
+    Y(0) = measurement_x;
+    Y(1) = measurement_y;
+    Y(2) = measurement_z;
+//    cout << Y << endl;
+    errors.col(k_measured - 1) = Y - C * estimatesApriori.col(k_measured - 1);
+    // compute the a posteriori estimate, remember that for k_measured=0, the corresponding column is x0 - initial guess
+    estimatesAposteriori.col(k_measured) =
+            estimatesApriori.col(k_measured - 1) +
+            gainMatrices(all, seq((k_measured - 1) * r, k_measured * r - 1)) * errors.col(k_measured - 1);
 
     MatrixXd In;
     In = MatrixXd::Identity(n, n);
     MatrixXd IminusKC;
     IminusKC.resize(n, n);
-    IminusKC = In - gainMatrices(all, seq((k - 1) * r, k * r - 1)) * C;  // I-KC
+    IminusKC = In - gainMatrices(all, seq((k_measured - 1) * r, k_measured * r - 1)) * C;  // I-KC
 
     // update the a posteriori covariance matrix
-    covarianceAposteriori(all, seq(k * n, (k + 1) * n - 1))
-            = IminusKC * covarianceApriori(all, seq((k - 1) * n, k * n - 1)) * (IminusKC.transpose())
-              + gainMatrices(all, seq((k - 1) * r, k * r - 1)) * R *
-                (gainMatrices(all, seq((k - 1) * r, k * r - 1)).transpose());
+    covarianceAposteriori(all, seq(k_measured * n, (k_measured + 1) * n - 1))
+            = IminusKC * covarianceApriori(all, seq((k_measured - 1) * n, k_measured * n - 1)) * (IminusKC.transpose())
+              + gainMatrices(all, seq((k_measured - 1) * r, k_measured * r - 1)) * R *
+                (gainMatrices(all, seq((k_measured - 1) * r, k_measured * r - 1)).transpose());
 }
 
 // this member function is used to load the measurement data from the external CSV file
@@ -188,7 +201,7 @@ MatrixXd KalmanFilter::openData(string fileToOpen) {
 
 void KalmanFilter::saveData(string estimatesAposterioriFile, string estimatesAprioriFile,
                             string covarianceAposterioriFile, string covarianceAprioriFile,
-                            string gainMatricesFile, string errorsFile) const {
+                            string gainMatricesFile, string errorsFile, string X_prediction_aheadFile) const {
     const static IOFormat CSVFormat(FullPrecision, DontAlignCols, ", ", "\n");
 
     ofstream file1(estimatesAposterioriFile);
@@ -228,5 +241,10 @@ void KalmanFilter::saveData(string estimatesAposterioriFile, string estimatesApr
         file6.close();
     }
 
+    ofstream file7(X_prediction_aheadFile);
+    if (file7.is_open()) {
+        file7 << X_prediction_ahead.format(CSVFormat);
+        file7.close();
+    }
 
 }

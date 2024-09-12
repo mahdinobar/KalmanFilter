@@ -55,7 +55,7 @@ class KalmanFilter(object):
         # this list is used to store prediction errors error_k=y_k-C*xk^{-}
         self.errors = []
 
-        self.x_prediction_ahead = []
+        self.X_prediction_ahead = []
 
     # this function propagates x_{k-1}^{+} through the model to compute x_{k}^{-}
     # this function also propagates P_{k-1}^{+} through the covariance model to compute P_{k}^{-}
@@ -115,10 +115,10 @@ class KalmanFilter(object):
         # self.estimationErrorCovarianceMatricesAposteriori.append(Pk_plus)
 
     def prediction_aheads(self, u, dt):
-        if self.x_prediction_ahead==[]:
-            self.x_prediction_ahead = self.estimates_aposteriori
+        if self.X_prediction_ahead==[]:
+            self.X_prediction_ahead = self.estimates_aposteriori
         else:
-            self.x_prediction_ahead =np.hstack((self.x_prediction_ahead,self.estimates_aposteriori[:, -1].reshape(self.x0.size, 1)))
+            self.X_prediction_ahead =np.hstack((self.X_prediction_ahead,self.estimates_aposteriori[:, -1].reshape(self.x0.size, 1)))
         for i in range(int(dt)-1):
-            x = self.A * self.x_prediction_ahead[:, -1].reshape(self.x0.size, 1) + self.B * u
-            self.x_prediction_ahead = np.hstack((self.x_prediction_ahead, x))
+            x = self.A * self.X_prediction_ahead[:, -1].reshape(self.x0.size, 1) + self.B * u
+            self.X_prediction_ahead = np.hstack((self.X_prediction_ahead, x))

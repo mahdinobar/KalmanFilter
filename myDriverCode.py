@@ -11,7 +11,7 @@ from myKalmanFilter import KalmanFilter
 import cv2
 
 
-def main(log_dir):
+def main_model_0(log_dir):
     # initial values for the simulation
     # x_hat_init = np.array([514.5, -269.8, 67.6])  # [mm]
     x_hat_init = np.array(
@@ -69,10 +69,10 @@ def main(log_dir):
     X_measured = P_t_hat[:3, :]
 
     # here, we save the noisy outputs such that we can use them in C++ code
-    np.savetxt('/home/mahdi/Documents/kalman/myCode/myOutput_x.csv', X_measured[0, :], delimiter=',')
-    np.savetxt('/home/mahdi/Documents/kalman/myCode/myOutput_y.csv', X_measured[1, :], delimiter=',')
-    np.savetxt('/home/mahdi/Documents/kalman/myCode/myOutput_z.csv', X_measured[2, :], delimiter=',')
-    np.savetxt('/home/mahdi/Documents/kalman/myCode/tVec_measured.csv', tVec_measured, delimiter=',')
+    np.savetxt('/home/mahdi/Documents/kalman/myCode/myOutput_x_model_0.csv', X_measured[0, :], delimiter=',')
+    np.savetxt('/home/mahdi/Documents/kalman/myCode/myOutput_y_model_0.csv', X_measured[1, :], delimiter=',')
+    np.savetxt('/home/mahdi/Documents/kalman/myCode/myOutput_z_model_0.csv', X_measured[2, :], delimiter=',')
+    np.savetxt('/home/mahdi/Documents/kalman/myCode/tVec_measured_model_0.csv', tVec_measured, delimiter=',')
 
     # verify the X_true vector by plotting the results
 
@@ -124,9 +124,14 @@ def main(log_dir):
     x_hat_cpp = []
     y_hat_cpp = []
     z_hat_cpp = []
+
+    x_pred_cpp = []
+    y_pred_cpp = []
+    z_pred_cpp = []
     # Load C++ estimates
     cppEstimates = np.loadtxt("/home/mahdi/Documents/kalman/myCode/myEstimatesAposteriori_model_0.csv", delimiter=",")
-    for j in range(0, np.size(tVec_measured_rounded)):  # np.arange(np.size(tVec_measured_rounded)):
+    cppPredictions = np.loadtxt("/home/mahdi/Documents/kalman/myCode/X_prediction_ahead_model_0.csv", delimiter=",")
+    for j in range(0, np.size(tVec_measured_rounded)):
         # python estimates
         x_hat.append(KalmanFilterObject.estimates_aposteriori[0, j])
         y_hat.append(KalmanFilterObject.estimates_aposteriori[1, j])
@@ -135,6 +140,11 @@ def main(log_dir):
         x_hat_cpp.append(cppEstimates[0, j])
         y_hat_cpp.append(cppEstimates[1, j])
         z_hat_cpp.append(cppEstimates[2, j])
+    for j in range(0, np.size(tVec)):
+        # cpp predictions
+        x_pred_cpp.append(cppPredictions[0, j])
+        y_pred_cpp.append(cppPredictions[1, j])
+        z_pred_cpp.append(cppPredictions[2, j])
 
     k0 = 0
     fig, ax = plt.subplots(3, 1, figsize=(12, 8))
@@ -142,15 +152,17 @@ def main(log_dir):
     ax[0].plot(tVec_measured_rounded[1:], X_measured[0, 1:], '-or', linewidth=1, markersize=5, label='measured')
     ax[0].plot(tVec_measured_rounded, x_hat, 'ob', linewidth=1, markersize=5, label='aposteriori estimated')
     ax[0].plot(tVec_measured_rounded, x_hat_cpp, 'om', linewidth=1, markersize=5, label='aposteriori estimated Cpp')
-    ax[0].plot(tVec, np.asarray(KalmanFilterObject.x_prediction_ahead[0, :]).squeeze(), '-Dk', linewidth=1,
-               markersize=1, label='prediction ahead')
+    ax[0].plot(tVec, x_pred_cpp, '^y', linewidth=1, markersize=5, label='predictions ahead Cpp')
+    ax[0].plot(tVec, np.asarray(KalmanFilterObject.X_prediction_ahead[0, :]).squeeze(), '-Dk', linewidth=1,
+               markersize=1, label='prediction ahead Python')
     ax[0].set_ylabel("x [mm]", fontsize=14)
     ax[0].legend()
     ax[1].plot(tVec, X_true[1, :], '-*g', linewidth=1, markersize=1, label='true')
     ax[1].plot(tVec_measured_rounded[1:], X_measured[1, 1:], '-or', linewidth=1, markersize=5, label='measured')
     ax[1].plot(tVec_measured_rounded, y_hat, '-ob', linewidth=1, markersize=5, label='aposteriori estimated')
     ax[1].plot(tVec_measured_rounded, y_hat_cpp, '-om', linewidth=1, markersize=5, label='aposteriori estimated Cpp')
-    ax[1].plot(tVec, np.asarray(KalmanFilterObject.x_prediction_ahead[1, :]).squeeze(), '-Dk', linewidth=1,
+    ax[1].plot(tVec, y_pred_cpp, '^y', linewidth=1, markersize=5, label='predictions ahead Cpp')
+    ax[1].plot(tVec, np.asarray(KalmanFilterObject.X_prediction_ahead[1, :]).squeeze(), '-Dk', linewidth=1,
                markersize=1, label='prediction ahead')
     ax[1].set_ylabel("y [mm]", fontsize=14)
     ax[1].legend()
@@ -158,7 +170,8 @@ def main(log_dir):
     ax[2].plot(tVec_measured_rounded[1:], X_measured[2, 1:], '-or', linewidth=1, markersize=5, label='measured')
     ax[2].plot(tVec_measured_rounded, z_hat, '-ob', linewidth=1, markersize=5, label='aposteriori estimated')
     ax[2].plot(tVec_measured_rounded, z_hat_cpp, '-om', linewidth=1, markersize=5, label='aposteriori estimated Cpp')
-    ax[2].plot(tVec, np.asarray(KalmanFilterObject.x_prediction_ahead[2, :]).squeeze(), '-Dk', linewidth=1,
+    ax[2].plot(tVec, z_pred_cpp, '^y', linewidth=1, markersize=5, label='predictions ahead Cpp')
+    ax[2].plot(tVec, np.asarray(KalmanFilterObject.X_prediction_ahead[2, :]).squeeze(), '-Dk', linewidth=1,
                markersize=1, label='prediction ahead')
     ax[2].set_xlabel("$t_{k}$ [ms]", fontsize=14)
     ax[2].set_ylabel("z [mm]", fontsize=14)
@@ -182,13 +195,18 @@ def main(log_dir):
     # ax2.legend(fontsize=14)
     # fig2.savefig('estimationErrorsImplementation.png', dpi=600)
     # plt.show()
-    np.save(log_dir + "/r_star.npy", np.asarray(KalmanFilterObject.x_prediction_ahead))
-    np.savetxt(log_dir + '/r_star.csv', np.asarray(KalmanFilterObject.x_prediction_ahead), delimiter=',')
-    np.savetxt(log_dir + '/x_star.csv', np.asarray(KalmanFilterObject.x_prediction_ahead)[0, :], delimiter=',')
-    np.savetxt(log_dir + '/y_star.csv', np.asarray(KalmanFilterObject.x_prediction_ahead)[1, :], delimiter=',')
-    np.savetxt(log_dir + '/z_star.csv', np.asarray(KalmanFilterObject.x_prediction_ahead)[2, :], delimiter=',')
-    np.save(log_dir + "/t.npy", tVec)
-    np.savetxt(log_dir + '/t.csv', tVec, delimiter=',')
+    np.save(log_dir + "/r_star_model_0.npy", np.asarray(KalmanFilterObject.X_prediction_ahead))
+    np.savetxt(log_dir + '/r_star_model_0.csv', np.asarray(KalmanFilterObject.X_prediction_ahead), delimiter=',')
+    np.savetxt(log_dir + '/x_star_model_0.csv', np.asarray(KalmanFilterObject.X_prediction_ahead)[0, :], delimiter=',')
+    np.savetxt(log_dir + '/y_star_model_0.csv', np.asarray(KalmanFilterObject.X_prediction_ahead)[1, :], delimiter=',')
+    np.savetxt(log_dir + '/z_star_model_0.csv', np.asarray(KalmanFilterObject.X_prediction_ahead)[2, :], delimiter=',')
+    np.savetxt(log_dir + '/x_star_cpp_model_0.csv', x_pred_cpp, delimiter=',')
+    np.savetxt(log_dir + '/y_star_cpp_model_0.csv', y_pred_cpp, delimiter=',')
+    np.savetxt(log_dir + '/z_star_cpp_model_0.csv', z_pred_cpp, delimiter=',')
+    np.save(log_dir + "/t_model_0.npy", tVec)
+    np.savetxt(log_dir + '/t_model_0.csv', tVec, delimiter=',')
+    np.save(log_dir + "/tVec_measured_model_0.npy", tVec_measured)
+    np.savetxt(log_dir + '/tVec_measured_model_0.csv', tVec_measured, delimiter=',')
 
     print("end")
 
@@ -329,21 +347,21 @@ def main_model_1(log_dir):
     ax[0].plot(tVec, X_true[0, :], '-*g', linewidth=1, markersize=1, label='true')
     ax[0].plot(tVec_measured_rounded[1:], X_measured[0, 1:], '-or', linewidth=1, markersize=5, label='measured')
     ax[0].plot(tVec_measured_rounded, x_hat, 'ob', linewidth=1, markersize=5, label='estimated')
-    ax[0].plot(tVec, np.asarray(KalmanFilterObject.x_prediction_ahead[0, :]).squeeze(), '-Dk', linewidth=1,
+    ax[0].plot(tVec, np.asarray(KalmanFilterObject.X_prediction_ahead[0, :]).squeeze(), '-Dk', linewidth=1,
                markersize=1, label='prediction ahead')
     ax[0].set_ylabel("x [mm]", fontsize=14)
     ax[0].legend()
     ax[1].plot(tVec, X_true[1, :], '-*g', linewidth=1, markersize=1, label='true')
     ax[1].plot(tVec_measured_rounded[1:], X_measured[1, 1:], '-or', linewidth=1, markersize=5, label='measured')
     ax[1].plot(tVec_measured_rounded, y_hat, '-ob', linewidth=1, markersize=5, label='estimated')
-    ax[1].plot(tVec, np.asarray(KalmanFilterObject.x_prediction_ahead[1, :]).squeeze(), '-Dk', linewidth=1,
+    ax[1].plot(tVec, np.asarray(KalmanFilterObject.X_prediction_ahead[1, :]).squeeze(), '-Dk', linewidth=1,
                markersize=1, label='prediction ahead')
     ax[1].set_ylabel("y [mm]", fontsize=14)
     ax[1].legend()
     ax[2].plot(tVec, X_true[2, :], '-*g', linewidth=1, markersize=1, label='true')
     ax[2].plot(tVec_measured_rounded[1:], X_measured[2, 1:], '-or', linewidth=1, markersize=5, label='measured')
     ax[2].plot(tVec_measured_rounded, z_hat, '-ob', linewidth=1, markersize=5, label='estimated')
-    ax[2].plot(tVec, np.asarray(KalmanFilterObject.x_prediction_ahead[2, :]).squeeze(), '-Dk', linewidth=1,
+    ax[2].plot(tVec, np.asarray(KalmanFilterObject.X_prediction_ahead[2, :]).squeeze(), '-Dk', linewidth=1,
                markersize=1, label='prediction ahead')
     ax[2].set_xlabel("$t_{k}$ [ms]", fontsize=14)
     ax[2].set_ylabel("z [mm]", fontsize=14)
@@ -367,11 +385,11 @@ def main_model_1(log_dir):
     # ax2.legend(fontsize=14)
     # fig2.savefig('estimationErrorsImplementation.png', dpi=600)
     # plt.show()
-    np.save(log_dir + "/r_star_model_1.npy", np.asarray(KalmanFilterObject.x_prediction_ahead))
-    np.savetxt(log_dir + '/r_star_model_1.csv', np.asarray(KalmanFilterObject.x_prediction_ahead), delimiter=',')
-    np.savetxt(log_dir + '/x_star_model_1.csv', np.asarray(KalmanFilterObject.x_prediction_ahead)[0, :], delimiter=',')
-    np.savetxt(log_dir + '/y_star_model_1.csv', np.asarray(KalmanFilterObject.x_prediction_ahead)[1, :], delimiter=',')
-    np.savetxt(log_dir + '/z_star_model_1.csv', np.asarray(KalmanFilterObject.x_prediction_ahead)[2, :], delimiter=',')
+    np.save(log_dir + "/r_star_model_1.npy", np.asarray(KalmanFilterObject.X_prediction_ahead))
+    np.savetxt(log_dir + '/r_star_model_1.csv', np.asarray(KalmanFilterObject.X_prediction_ahead), delimiter=',')
+    np.savetxt(log_dir + '/x_star_model_1.csv', np.asarray(KalmanFilterObject.X_prediction_ahead)[0, :], delimiter=',')
+    np.savetxt(log_dir + '/y_star_model_1.csv', np.asarray(KalmanFilterObject.X_prediction_ahead)[1, :], delimiter=',')
+    np.savetxt(log_dir + '/z_star_model_1.csv', np.asarray(KalmanFilterObject.X_prediction_ahead)[2, :], delimiter=',')
     np.save(log_dir + "/t_model_1.npy", tVec)
     np.savetxt(log_dir + '/t_model_1.csv', tVec, delimiter=',')
 
@@ -436,6 +454,6 @@ def load_measurements(log_dir):
 
 if __name__ == "__main__":
     log_dir = "/home/mahdi/Documents/kalman/myCode/logs/measurements"
-    main(log_dir)
+    main_model_0(log_dir)
     # main_model_1(log_dir)
     # load_measurements(log_dir)

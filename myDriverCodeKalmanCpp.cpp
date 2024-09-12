@@ -63,10 +63,10 @@ int main() {
     MatrixXd tVec_measured;
     // you can call the function openData() without creating the object of the class Kalman filter
     // since openData is a static function!
-    x_measured = KalmanFilter::openData("/home/mahdi/Documents/kalman/myCode/myOutput_x.csv");
-    y_measured = KalmanFilter::openData("/home/mahdi/Documents/kalman/myCode/myOutput_y.csv");
-    z_measured = KalmanFilter::openData("/home/mahdi/Documents/kalman/myCode/myOutput_z.csv");
-    tVec_measured = KalmanFilter::openData("/home/mahdi/Documents/kalman/myCode/tVec_measured.csv");
+    x_measured = KalmanFilter::openData("/home/mahdi/Documents/kalman/myCode/myOutput_x_model_0.csv");
+    y_measured = KalmanFilter::openData("/home/mahdi/Documents/kalman/myCode/myOutput_y_model_0.csv");
+    z_measured = KalmanFilter::openData("/home/mahdi/Documents/kalman/myCode/myOutput_z_model_0.csv");
+    tVec_measured = KalmanFilter::openData("/home/mahdi/Documents/kalman/myCode/tVec_measured_model_0.csv");
     //cout<<X_measured<<endl;
     int N = x_measured.rows();
     cout << N << endl; //for verification
@@ -89,7 +89,7 @@ int main() {
 
 
     //cout<<N<<endl;
-    double dt;
+    int dt;
     // this is the MAIN KALMAN FILTER LOOP - predict and update (SISO system)
     for (int k_measured = 1; k_measured < N; k_measured++) {
         u(0, 0) = 0.0341;
@@ -100,8 +100,10 @@ int main() {
 //        cout << tVec_measured(k_measured-1);
 
         dt = std::round(tVec_measured(k_measured)) - std::round(tVec_measured(k_measured - 1));
-        KalmanFilterObject.B(1) = dt;
+        KalmanFilterObject.B(1) = dt; //[ms]
         KalmanFilterObject.predictEstimate(u);
+        KalmanFilterObject.B(1) = 1; //[ms]
+        KalmanFilterObject.prediction_aheads(u, dt);
         // update the estimate
         KalmanFilterObject.updateEstimate(x_measured(k_measured), y_measured(k_measured), z_measured(k_measured));
     }
@@ -114,7 +116,7 @@ int main() {
                                 "myCode/myEstimatesAprioriFile_model_0.csv",
                                 "myCode/myCovarianceAposterioriFile_model_0.csv",
                                 "myCode/myCovarianceAprioriFile_model_0.csv",
-                                "myCode/myGainMatricesFile_model_0.csv", "myCode/myErrorsFile_model_0.csv");
+                                "myCode/myGainMatricesFile_model_0.csv", "myCode/myErrorsFile_model_0.csv", "myCode/X_prediction_ahead_model_0.csv");
 
 
     return 0;
