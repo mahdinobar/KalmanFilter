@@ -214,7 +214,7 @@ def main_model_0(log_dir):
 def main_model_1(log_dir):
     # initial values for the simulation
     # x_hat_init = np.array([514.5, -269.8, 67.6])  # [mm]
-    x_hat_init = np.array([9.5 * 50 + 30 + 5 + 4, -5.5 * 50 + 5, 90 + 3 - 25 + 33, 0, -0.0341,
+    x_hat_init = np.array([9.5 * 50 + 30 + 5 + 4, -5.5 * 50 + 5, 90 + 3 - 25 + 33, 0, 0.0341,
                            0])  # [mm] manually measured and fixed rigidly+ speed in [mm/1ms]
     # v_hat_init = np.array([0, 3 * 10 / 1000, 0])  # [mm/1ms]
     v_hat_init = np.array([0, 0.0341, 0])  # [mm/1ms]
@@ -226,8 +226,8 @@ def main_model_1(log_dir):
     # system matrices and covariances
     dt = 1
     A = np.matrix(
-        [[1, 0, 0, dt, 0, 0], [0, 1, 0, 0, dt, 0], [0, 0, 1, 0, 0, dt], [0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0],
-         [0, 0, 0, 0, 0, 0]])
+        [[1, 0, 0, dt, 0, 0], [0, 1, 0, 0, dt, 0], [0, 0, 1, 0, 0, dt], [0, 0, 0, 1, 0, 0], [0, 0, 0, 0, 1, 0],
+         [0, 0, 0, 0, 0, 1]])
     B = np.zeros((6,1))
     C = np.matrix([[1, 0, 0, 0, 0, 0], [0, 1, 0, 0, 0, 0], [0, 0, 1, 0, 0, 0]])
 
@@ -235,17 +235,21 @@ def main_model_1(log_dir):
     # 1.741=np.std(P_t_hat[1,12:80]-(0.035*(tVec[12:80]-tVec[12])+P_t_hat[1,12]))
     # 0.174=np.std(P_t_hat[2,12:80])
     # R = np.array([[0.288 ** 2, 0, 0], [0, 1.741 ** 2, 0], [0, 0, 0.174 ** 2]])
-    R = np.array([[1 ** 2, 0, 0], [0, 2 ** 2, 0], [0, 0, 1 ** 2]])
+    R = np.array([[1e0 ** 2, 0, 0], [0, 2e0 ** 2, 0], [0, 0, 1e0 ** 2]])
     # process uncertainty covariance
     Q = np.array(
-        [[0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0], [0, 0, 0, 1e-3 ** 2, 0, 0],
-         [0, 0, 0, 0, 10e-3 ** 2, 0],
-         [0, 0, 0, 0, 0, 2e-3 ** 2]])  # np.matrix(np.zeros((3, 3)))
+        [[0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0], [0, 0, 0, 65e-3 ** 2, 0, 0],
+         [0, 0, 0, 0, 130e-3 ** 2, 0],
+         [0, 0, 0, 0, 0, 65e-3 ** 2]])
 
     # guess of the initial estimate
     x0 = x_hat_init  # np.array([ 511.59460576, -272.16726961, 68.63392779])
     # initial covariance matrix
-    P0 = np.asmatrix(np.diag([1 ** 2, 2 ** 2, 1 ** 2, 1e-3 ** 2, 2e-3 ** 2, 2e-3 ** 2]))
+    # P0 = np.asmatrix(np.diag([1 ** 2, 2 ** 2, 1 ** 2, 1e-3 ** 2, 2e-3 ** 2, 2e-3 ** 2]))
+    P0 = np.asmatrix(np.array(
+        [[1, 0, 0, 0, 0, 0], [0, 4, 0, 0, 0, 0], [0, 0, 1, 0, 0, 0], [0, 0, 0, 1, 0, 0],
+         [0, 0, 0, 0, 4, 0],
+         [0, 0, 0, 0, 0, 1]]))
 
     # time vector for simulation
     tVec = np.linspace(0, (N - 1), N)
@@ -316,9 +320,12 @@ def main_model_1(log_dir):
         # TODO correct for the online application where dt is varying and be know the moment we receive the measurement
         dt = tVec_measured_rounded[k_measured] - tVec_measured_rounded[k_measured - 1]
         KalmanFilterObject.A = np.matrix(
-        [[1, 0, 0, dt, 0, 0], [0, 1, 0, 0, dt, 0], [0, 0, 1, 0, 0, dt], [0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0],
-         [0, 0, 0, 0, 0, 0]])
+        [[1, 0, 0, dt, 0, 0], [0, 1, 0, 0, dt, 0], [0, 0, 1, 0, 0, dt], [0, 0, 0, 1, 0, 0], [0, 0, 0, 0, 1, 0],
+         [0, 0, 0, 0, 0, 1]])
         KalmanFilterObject.propagateDynamics(u)
+        KalmanFilterObject.A = np.matrix(
+        [[1, 0, 0, 1, 0, 0], [0, 1, 0, 0, 1, 0], [0, 0, 1, 0, 0, 1], [0, 0, 0, 1, 0, 0], [0, 0, 0, 0, 1, 0],
+         [0, 0, 0, 0, 0, 1]])
         KalmanFilterObject.prediction_aheads(u, dt)
         KalmanFilterObject.computeAposterioriEstimate(X_measured[:, k_measured])
 
@@ -454,6 +461,18 @@ def load_measurements(log_dir):
 
 if __name__ == "__main__":
     log_dir = "/home/mahdi/Documents/kalman/myCode/logs/measurements"
-    main_model_0(log_dir)
+    # main_model_0(log_dir)
     # main_model_1(log_dir)
     # load_measurements(log_dir)
+
+    # import csv
+    # with open('/home/mahdi/ETHZ_ThinkPad/RLC1/osciloscope_stepperMotor_measurements_pin7_dp_gt_25MicrosSec/ALL0005/F0005CH1.CSV', newline='') as csvfile:
+    #
+    #     spamreader = csv.reader(csvfile, delimiter=' ', quotechar='|')
+    import pandas as pd
+
+    # read specific columns of csv file using Pandas
+    data=pd.read_csv("/home/mahdi/ETHZ_ThinkPad/RLC1/osciloscope_stepperMotor_measurements_pin7_dp_gt_25MicrosSec/ALL0005/F0005CH1.CSV", usecols=['time','value']).to_numpy()
+    d=data[np.argwhere(np.abs(np.diff(data[:,1]))>2.3),0]
+    print(np.diff(d[:,0])*1e6)
+    print("end")
