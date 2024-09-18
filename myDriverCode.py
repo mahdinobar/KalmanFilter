@@ -228,7 +228,7 @@ def main_model_1(log_dir):
     A = np.matrix(
         [[1, 0, 0, dt, 0, 0], [0, 1, 0, 0, dt, 0], [0, 0, 1, 0, 0, dt], [0, 0, 0, 1, 0, 0], [0, 0, 0, 0, 1, 0],
          [0, 0, 0, 0, 0, 1]])
-    B = np.zeros((6,1))
+    B = np.zeros((6, 1))
     C = np.matrix([[1, 0, 0, 0, 0, 0], [0, 1, 0, 0, 0, 0], [0, 0, 1, 0, 0, 0]])
 
     # measurement noise covariance
@@ -258,7 +258,7 @@ def main_model_1(log_dir):
     # vector used to store the simulated X_true
     X_true = np.zeros((3, np.size(tVec)))
     # velocity = np.zeros((3, np.size(tVec)))
-    acceleration = np.zeros((3, np.size(tVec)))
+    # acceleration = np.zeros((3, np.size(tVec)))
     # simulate the system behavior (discretize system)
     for k in np.arange(np.size(tVec)):
         for i in range(0, 3):
@@ -282,8 +282,10 @@ def main_model_1(log_dir):
     np.savetxt('myOutput_x_model_1.csv', X_measured[0, :], delimiter=',')
     np.savetxt('myOutput_y_model_1.csv', X_measured[1, :], delimiter=',')
     np.savetxt('myOutput_z_model_1.csv', X_measured[2, :], delimiter=',')
+    np.savetxt('/home/mahdi/Documents/kalman/myCode/tVec_measured_model_1.csv', tVec_measured, delimiter=',')
 
-    # verify the X_true vector by plotting the results
+
+# verify the X_true vector by plotting the results
 
     fig, ax = plt.subplots(3, 1, figsize=(12, 8))
     ax[0].plot(tVec[0:N], X_true[0, 0:N], '-*g', linewidth=1, label='true')
@@ -302,13 +304,6 @@ def main_model_1(log_dir):
     plt.tight_layout()
     fig.savefig('data_model_1.png', dpi=600)
     plt.show()
-
-    ###############################################################################
-    # BEFORE RUNNING THE REMAINING PART OF THE CODE
-    # RUN THE C++ CODE THAT IMPLEMENTS THE KALMAN FILTER
-    # THE C++ CODE
-    # AFTER THAT, YOU CAN RUN THE CODE GIVEN BELOW
-    ###############################################################################
 
     # create a Kalman filter object
     KalmanFilterObject = KalmanFilter(x0, P0, A, B, C, Q, R)
@@ -333,74 +328,176 @@ def main_model_1(log_dir):
     x_hat = []
     y_hat = []
     z_hat = []
-    # # Here are the C++ estimates
-    # x_hat_cpp = []
-    # y_hat_cpp = []
-    # z_hat_cpp = []
-    # # Load C++ estimates
-    # cppEstimates = np.loadtxt("myEstimatesAposteriori.csv", delimiter=",")
-    for j in range(0, np.size(tVec_measured_rounded)):  # np.arange(np.size(tVec_measured_rounded)):
+    ###############################################################################
+    # BEFORE RUNNING THE REMAINING PART OF THE CODE
+    # RUN THE C++ CODE THAT IMPLEMENTS THE KALMAN FILTER
+    # THE C++ CODE
+    # AFTER THAT, YOU CAN RUN THE CODE GIVEN BELOW
+    ###############################################################################
+    #
+    # # create a Kalman filter object
+    # KalmanFilterObject = KalmanFilter(x0, P0, A, B, C, Q, R)
+    # u = np.array([0])
+    # tVec_measured_rounded = np.round(tVec_measured)
+    # # simulate online prediction
+    # for k_measured in range(1, np.size(tVec_measured_rounded)):  # np.arange(np.size(tVec_measured_rounded)):
+    #     print(k_measured)
+    #     # TODO correct for the online application where dt is varying and be know the moment we receive the measurement
+    #     dt = tVec_measured_rounded[k_measured] - tVec_measured_rounded[k_measured - 1]
+    #     KalmanFilterObject.A = np.matrix(
+    #     [[1, 0, 0, dt, 0, 0], [0, 1, 0, 0, dt, 0], [0, 0, 1, 0, 0, dt], [0, 0, 0, 1, 0, 0], [0, 0, 0, 0, 1, 0],
+    #      [0, 0, 0, 0, 0, 1]])
+    #     KalmanFilterObject.propagateDynamics(u)
+    #     KalmanFilterObject.A = np.matrix(
+    #     [[1, 0, 0, 1, 0, 0], [0, 1, 0, 0, 1, 0], [0, 0, 1, 0, 0, 1], [0, 0, 0, 1, 0, 0], [0, 0, 0, 0, 1, 0],
+    #      [0, 0, 0, 0, 0, 1]])
+    #     KalmanFilterObject.prediction_aheads(u, dt)
+    #     KalmanFilterObject.computeAposterioriEstimate(X_measured[:, k_measured])
+    #
+    # # extract the state estimates in order to plot the results
+    # x_hat = []
+    # y_hat = []
+    # z_hat = []
+    # # # Here are the C++ estimates
+    # # x_hat_cpp = []
+    # # y_hat_cpp = []
+    # # z_hat_cpp = []
+    # # # Load C++ estimates
+    # # cppEstimates = np.loadtxt("myEstimatesAposteriori.csv", delimiter=",")
+    # for j in range(0, np.size(tVec_measured_rounded)):  # np.arange(np.size(tVec_measured_rounded)):
+    #     # python estimates
+    #     x_hat.append(KalmanFilterObject.estimates_aposteriori[0, j])
+    #     y_hat.append(KalmanFilterObject.estimates_aposteriori[1, j])
+    #     z_hat.append(KalmanFilterObject.estimates_aposteriori[2, j])
+    #     # # cpp estimates
+    #     # x_hat_cpp.append(cppEstimates[0, j])
+    #     # y_hat_cpp.append(cppEstimates[1, j])
+    #     # z_hat_cpp.append(cppEstimates[2, j])
+    #
+    # k0 = 0
+    # fig, ax = plt.subplots(3, 1, figsize=(12, 8))
+    # ax[0].plot(tVec, X_true[0, :], '-*g', linewidth=1, markersize=1, label='true')
+    # ax[0].plot(tVec_measured_rounded[1:], X_measured[0, 1:], '-or', linewidth=1, markersize=5, label='measured')
+    # ax[0].plot(tVec_measured_rounded, x_hat, 'ob', linewidth=1, markersize=5, label='estimated')
+    # ax[0].plot(tVec, np.asarray(KalmanFilterObject.X_prediction_ahead[0, :]).squeeze(), '-Dk', linewidth=1,
+    #            markersize=1, label='prediction ahead')
+    # ax[0].set_ylabel("x [mm]", fontsize=14)
+    # ax[0].legend()
+    # ax[1].plot(tVec, X_true[1, :], '-*g', linewidth=1, markersize=1, label='true')
+    # ax[1].plot(tVec_measured_rounded[1:], X_measured[1, 1:], '-or', linewidth=1, markersize=5, label='measured')
+    # ax[1].plot(tVec_measured_rounded, y_hat, '-ob', linewidth=1, markersize=5, label='estimated')
+    # ax[1].plot(tVec, np.asarray(KalmanFilterObject.X_prediction_ahead[1, :]).squeeze(), '-Dk', linewidth=1,
+    #            markersize=1, label='prediction ahead')
+    # ax[1].set_ylabel("y [mm]", fontsize=14)
+    # ax[1].legend()
+    # ax[2].plot(tVec, X_true[2, :], '-*g', linewidth=1, markersize=1, label='true')
+    # ax[2].plot(tVec_measured_rounded[1:], X_measured[2, 1:], '-or', linewidth=1, markersize=5, label='measured')
+    # ax[2].plot(tVec_measured_rounded, z_hat, '-ob', linewidth=1, markersize=5, label='estimated')
+    # ax[2].plot(tVec, np.asarray(KalmanFilterObject.X_prediction_ahead[2, :]).squeeze(), '-Dk', linewidth=1,
+    #            markersize=1, label='prediction ahead')
+    # ax[2].set_xlabel("$t_{k}$ [ms]", fontsize=14)
+    # ax[2].set_ylabel("z [mm]", fontsize=14)
+    # ax[2].legend()
+    # plt.tight_layout()
+    # fig.savefig('results_model_1.png', dpi=600)
+    # plt.show()
+    #
+    # # # plot the difference between the Python and C++ estimates
+    # # errorEstimators1 = np.array(x_hat) - np.array(x_hat_cpp)
+    # # errorEstimators2 = np.array(y_hat) - np.array(y_hat_cpp)
+    # # errorEstimators3 = np.array(z_hat) - np.array(z_hat_cpp)
+    # # fig2, ax2 = plt.subplots(1, 1, figsize=(8, 6))
+    # # ax2.plot(steps, errorEstimators1, color='red', linestyle='-', linewidth=2, label='(python_est-cpp_est)_{state 1}')
+    # # ax2.plot(steps, errorEstimators2, color='blue', linestyle='-', linewidth=2, label='(python_est-cpp_est)_{state 2}')
+    # # ax2.plot(steps, errorEstimators3, color='magenta', linestyle='-', linewidth=2, label='(python_est-cpp_est)_{state 3}')
+    # # ax2.set_xlabel("Discrete-time steps k", fontsize=14)
+    # # ax2.set_ylabel("Difference between implementations", fontsize=14)
+    # # ax2.tick_params(axis='both', labelsize=12)
+    # # ax2.grid()
+    # # ax2.legend(fontsize=14)
+    # # fig2.savefig('estimationErrorsImplementation.png', dpi=600)
+    # # plt.show()
+    # np.save(log_dir + "/r_star_model_1.npy", np.asarray(KalmanFilterObject.X_prediction_ahead))
+    # np.savetxt(log_dir + '/r_star_model_1.csv', np.asarray(KalmanFilterObject.X_prediction_ahead), delimiter=',')
+    # np.savetxt(log_dir + '/x_star_model_1.csv', np.asarray(KalmanFilterObject.X_prediction_ahead)[0, :], delimiter=',')
+    # np.savetxt(log_dir + '/y_star_model_1.csv', np.asarray(KalmanFilterObject.X_prediction_ahead)[1, :], delimiter=',')
+    # np.savetxt(log_dir + '/z_star_model_1.csv', np.asarray(KalmanFilterObject.X_prediction_ahead)[2, :], delimiter=',')
+    # np.save(log_dir + "/t_model_1.npy", tVec)
+    # np.savetxt(log_dir + '/t_model_1.csv', tVec, delimiter=',')
+    #
+    # print("end")
+    # Here are the C++ estimates
+    x_hat_cpp = []
+    y_hat_cpp = []
+    z_hat_cpp = []
+
+    x_pred_cpp = []
+    y_pred_cpp = []
+    z_pred_cpp = []
+    # Load C++ estimates
+    cppEstimates = np.loadtxt("/home/mahdi/Documents/kalman/myCode/myEstimatesAposteriori_model_1.csv", delimiter=",")
+    cppPredictions = np.loadtxt("/home/mahdi/Documents/kalman/myCode/X_prediction_ahead_model_1.csv", delimiter=",")
+    for j in range(0, np.size(tVec_measured_rounded)):
         # python estimates
         x_hat.append(KalmanFilterObject.estimates_aposteriori[0, j])
         y_hat.append(KalmanFilterObject.estimates_aposteriori[1, j])
         z_hat.append(KalmanFilterObject.estimates_aposteriori[2, j])
-        # # cpp estimates
-        # x_hat_cpp.append(cppEstimates[0, j])
-        # y_hat_cpp.append(cppEstimates[1, j])
-        # z_hat_cpp.append(cppEstimates[2, j])
+        # cpp estimates
+        x_hat_cpp.append(cppEstimates[0, j])
+        y_hat_cpp.append(cppEstimates[1, j])
+        z_hat_cpp.append(cppEstimates[2, j])
+    for j in range(0, np.size(tVec)):
+        # cpp predictions
+        x_pred_cpp.append(cppPredictions[0, j])
+        y_pred_cpp.append(cppPredictions[1, j])
+        z_pred_cpp.append(cppPredictions[2, j])
 
     k0 = 0
     fig, ax = plt.subplots(3, 1, figsize=(12, 8))
     ax[0].plot(tVec, X_true[0, :], '-*g', linewidth=1, markersize=1, label='true')
     ax[0].plot(tVec_measured_rounded[1:], X_measured[0, 1:], '-or', linewidth=1, markersize=5, label='measured')
-    ax[0].plot(tVec_measured_rounded, x_hat, 'ob', linewidth=1, markersize=5, label='estimated')
+    ax[0].plot(tVec_measured_rounded, x_hat, 'ob', linewidth=1, markersize=5, label='aposteriori estimated')
+    ax[0].plot(tVec_measured_rounded, x_hat_cpp, 'om', linewidth=1, markersize=5, label='aposteriori estimated Cpp')
+    ax[0].plot(tVec, x_pred_cpp, '^y', linewidth=1, markersize=5, label='predictions ahead Cpp')
     ax[0].plot(tVec, np.asarray(KalmanFilterObject.X_prediction_ahead[0, :]).squeeze(), '-Dk', linewidth=1,
-               markersize=1, label='prediction ahead')
+               markersize=1, label='prediction ahead Python')
     ax[0].set_ylabel("x [mm]", fontsize=14)
     ax[0].legend()
     ax[1].plot(tVec, X_true[1, :], '-*g', linewidth=1, markersize=1, label='true')
     ax[1].plot(tVec_measured_rounded[1:], X_measured[1, 1:], '-or', linewidth=1, markersize=5, label='measured')
-    ax[1].plot(tVec_measured_rounded, y_hat, '-ob', linewidth=1, markersize=5, label='estimated')
+    ax[1].plot(tVec_measured_rounded, y_hat, '-ob', linewidth=1, markersize=5, label='aposteriori estimated')
+    ax[1].plot(tVec_measured_rounded, y_hat_cpp, '-om', linewidth=1, markersize=5, label='aposteriori estimated Cpp')
+    ax[1].plot(tVec, y_pred_cpp, '^y', linewidth=1, markersize=5, label='predictions ahead Cpp')
     ax[1].plot(tVec, np.asarray(KalmanFilterObject.X_prediction_ahead[1, :]).squeeze(), '-Dk', linewidth=1,
                markersize=1, label='prediction ahead')
     ax[1].set_ylabel("y [mm]", fontsize=14)
     ax[1].legend()
     ax[2].plot(tVec, X_true[2, :], '-*g', linewidth=1, markersize=1, label='true')
     ax[2].plot(tVec_measured_rounded[1:], X_measured[2, 1:], '-or', linewidth=1, markersize=5, label='measured')
-    ax[2].plot(tVec_measured_rounded, z_hat, '-ob', linewidth=1, markersize=5, label='estimated')
+    ax[2].plot(tVec_measured_rounded, z_hat, '-ob', linewidth=1, markersize=5, label='aposteriori estimated')
+    ax[2].plot(tVec_measured_rounded, z_hat_cpp, '-om', linewidth=1, markersize=5, label='aposteriori estimated Cpp')
+    ax[2].plot(tVec, z_pred_cpp, '^y', linewidth=1, markersize=5, label='predictions ahead Cpp')
     ax[2].plot(tVec, np.asarray(KalmanFilterObject.X_prediction_ahead[2, :]).squeeze(), '-Dk', linewidth=1,
                markersize=1, label='prediction ahead')
     ax[2].set_xlabel("$t_{k}$ [ms]", fontsize=14)
     ax[2].set_ylabel("z [mm]", fontsize=14)
     ax[2].legend()
     plt.tight_layout()
-    fig.savefig('results_model_1.png', dpi=600)
+    fig.savefig('results.png', dpi=600)
     plt.show()
 
-    # # plot the difference between the Python and C++ estimates
-    # errorEstimators1 = np.array(x_hat) - np.array(x_hat_cpp)
-    # errorEstimators2 = np.array(y_hat) - np.array(y_hat_cpp)
-    # errorEstimators3 = np.array(z_hat) - np.array(z_hat_cpp)
-    # fig2, ax2 = plt.subplots(1, 1, figsize=(8, 6))
-    # ax2.plot(steps, errorEstimators1, color='red', linestyle='-', linewidth=2, label='(python_est-cpp_est)_{state 1}')
-    # ax2.plot(steps, errorEstimators2, color='blue', linestyle='-', linewidth=2, label='(python_est-cpp_est)_{state 2}')
-    # ax2.plot(steps, errorEstimators3, color='magenta', linestyle='-', linewidth=2, label='(python_est-cpp_est)_{state 3}')
-    # ax2.set_xlabel("Discrete-time steps k", fontsize=14)
-    # ax2.set_ylabel("Difference between implementations", fontsize=14)
-    # ax2.tick_params(axis='both', labelsize=12)
-    # ax2.grid()
-    # ax2.legend(fontsize=14)
-    # fig2.savefig('estimationErrorsImplementation.png', dpi=600)
-    # plt.show()
     np.save(log_dir + "/r_star_model_1.npy", np.asarray(KalmanFilterObject.X_prediction_ahead))
     np.savetxt(log_dir + '/r_star_model_1.csv', np.asarray(KalmanFilterObject.X_prediction_ahead), delimiter=',')
     np.savetxt(log_dir + '/x_star_model_1.csv', np.asarray(KalmanFilterObject.X_prediction_ahead)[0, :], delimiter=',')
     np.savetxt(log_dir + '/y_star_model_1.csv', np.asarray(KalmanFilterObject.X_prediction_ahead)[1, :], delimiter=',')
     np.savetxt(log_dir + '/z_star_model_1.csv', np.asarray(KalmanFilterObject.X_prediction_ahead)[2, :], delimiter=',')
+    np.savetxt(log_dir + '/x_star_cpp_model_1.csv', x_pred_cpp, delimiter=',')
+    np.savetxt(log_dir + '/y_star_cpp_model_1.csv', y_pred_cpp, delimiter=',')
+    np.savetxt(log_dir + '/z_star_cpp_model_1.csv', z_pred_cpp, delimiter=',')
     np.save(log_dir + "/t_model_1.npy", tVec)
     np.savetxt(log_dir + '/t_model_1.csv', tVec, delimiter=',')
-
-    print("end")
+    np.save(log_dir + "/tVec_measured_model_1.npy", tVec_measured)
+    np.savetxt(log_dir + '/tVec_measured_model_1.csv', tVec_measured, delimiter=',')
 
 
 def load_measurements(log_dir):
@@ -462,17 +559,13 @@ def load_measurements(log_dir):
 if __name__ == "__main__":
     log_dir = "/home/mahdi/Documents/kalman/myCode/logs/measurements"
     # main_model_0(log_dir)
-    # main_model_1(log_dir)
+    main_model_1(log_dir)
     # load_measurements(log_dir)
 
-    # import csv
-    # with open('/home/mahdi/ETHZ_ThinkPad/RLC1/osciloscope_stepperMotor_measurements_pin7_dp_gt_25MicrosSec/ALL0005/F0005CH1.CSV', newline='') as csvfile:
+    # import pandas as pd
     #
-    #     spamreader = csv.reader(csvfile, delimiter=' ', quotechar='|')
-    import pandas as pd
-
-    # read specific columns of csv file using Pandas
-    data=pd.read_csv("/home/mahdi/ETHZ_ThinkPad/RLC1/osciloscope_stepperMotor_measurements_pin7_dp_gt_25MicrosSec/ALL0005/F0005CH1.CSV", usecols=['time','value']).to_numpy()
-    d=data[np.argwhere(np.abs(np.diff(data[:,1]))>2.3),0]
-    print(np.diff(d[:,0])*1e6)
-    print("end")
+    # # read specific columns of csv file using Pandas
+    # data=pd.read_csv("/home/mahdi/ETHZ_ThinkPad/RLC1/osciloscope_stepperMotor_measurements_pin7_dp_gt_25MicrosSec/ALL0005/F0005CH1.CSV", usecols=['time','value']).to_numpy()
+    # d=data[np.argwhere(np.abs(np.diff(data[:,1]))>2.3),0]
+    # print(np.diff(d[:,0])*1e6)
+    # print("end")

@@ -50,7 +50,20 @@ class KalmanFilter{
                       string gainMatricesFile, string errorsFile, string X_prediction_aheadFile) const;
 
     // MatrixXd is an Eigen typdef for Matrix<double, Dynamic, Dynamic> means matrix dimensions are not fixed and changing
+    MatrixXd A;
     MatrixXd B;
+    MatrixXd C;
+    // covariance matrix of the state estimation error P0- abbreviated as "state covariance matrix"
+    MatrixXd P0;
+
+    // covariance matrix of the measurement noise
+    MatrixXd R;
+    // covariance matrix of the state disturbance
+    MatrixXd Q;
+    // guess of the initial state estimate
+    MatrixXd x0;
+
+    MatrixXd u;
 private:
 
         // this variable is used to track the current time step k_measured of the estimator
@@ -63,8 +76,8 @@ private:
         unsigned int m,n,r; 
 
         // MatrixXd is an Eigen typdef for Matrix<double, Dynamic, Dynamic> means matrix dimensions are not fixed and changing
-	    MatrixXd A,C,Q,R,P0; // A,B,C,Q, R, and P0 matrices (Q and R are disturbance and measurement noise covariance matrices
-	    MatrixXd x0;     // initial state
+//	    MatrixXd A,C,Q,R,P0; // A,B,C,Q, R, and P0 matrices (Q and R are disturbance and measurement noise covariance matrices
+//	    MatrixXd x0;     // initial state
 	    
         // this matrix is used to store the a posteriori estimates xk^{+} starting from the initial estimate 
         // note: the estimates are stored column wise in this matrix, starting from    
